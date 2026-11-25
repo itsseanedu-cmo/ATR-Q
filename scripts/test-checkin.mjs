@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {applyAction,emptySession} from '../lib/engine.ts';
+let s=emptySession(1800000000000);
+const request={type:'selfCheckin',name:'New player',skill:'3.5',checkInKey:crypto.randomUUID(),photo:''};
+assert.throws(()=>applyAction(s,request),/closed/);
+s.selfCheckin=true;
+s=applyAction(s,request);
+assert.equal(s.players.length,1);
+assert.equal(s.players[0].skill,'3.5');
+assert.equal(applyAction(s,request),s);
+assert.throws(()=>applyAction(s,{...request,checkInKey:crypto.randomUUID()}),/already/);
+assert.throws(()=>applyAction(s,{...request,name:'Other',checkInKey:crypto.randomUUID(),skill:'9'}),/rating/);
+assert.throws(()=>applyAction(s,{...request,name:'Other',checkInKey:crypto.randomUUID(),photo:'https://external/photo'}),/photo/);
+assert.equal(applyAction(s,{type:'clear'}).selfCheckin,true);
+console.log('Check-in closure, rating validation, duplicate submissions, headshot validation and persistence passed.');
+
+import {validateHeadshot,MAX_HEADSHOT_LENGTH} from '../lib/player-profile.ts';
+const photo='data:image/jpeg;base64,'+'A'.repeat(40000);
+assert.equal(validateHeadshot(photo),photo);
+assert.throws(()=>validateHeadshot('data:image/jpeg;base64,'+'A'.repeat(MAX_HEADSHOT_LENGTH)),/photo/);
+s=applyAction(s,{...request,name:'Player with photo',checkInKey:crypto.randomUUID(),photo});
+const id=s.players.at(-1).id;
+assert.equal(s.players.at(-1).photo,photo);
+s=applyAction(s,{type:'playerProfile',playerId:id,photo:''});
+assert.equal(s.players.at(-1).photo,'');
+s=applyAction(s,{type:'playerProfile',playerId:id,photo});
+assert.equal(s.players.at(-1).photo,photo);
+console.log('Larger headshots, server validation, profile removal and replacement passed.');

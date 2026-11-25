@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {applyAction,emptySession} from '../lib/engine.ts';
+import {globalStandings,playerRecordKey} from '../lib/global-standings.ts';
+
+const now=1800000000000;
+let first=applyAction(emptySession(now),{type:'addPlayers',names:['Alice Smith','Bob','Cara','Dan']},now);
+first=applyAction(first,{type:'fill'},now);
+first=applyAction(first,{type:'end',courtId:'c1',scoreA:'11',scoreB:'9'},now+1000);
+let second=applyAction(emptySession(now+2000),{type:'addPlayers',names:['  ALICE   SMITH  ','Bob','Cara','Dan']},now+2000);
+second=applyAction(second,{type:'fill'},now+2000);
+second=applyAction(second,{type:'end',courtId:'c1',reason:'early'},now+3000);
+const key=playerRecordKey('Alice Smith');
+const total=globalStandings([first,second]).find(row=>row.id===key);
+assert.equal(total.games,2);
+assert.equal(total.sessions,2);
+assert.equal(total.wins+total.losses,1);
+const deleted=globalStandings([first,second],{players:{[key]:now+1500}});
+assert.equal(deleted.find(row=>row.id===key).games,1);
+assert.equal(deleted.find(row=>row.id===key).wins,0);
+assert.equal(deleted.find(row=>row.id===key).losses,0);
+assert.deepEqual(globalStandings([first,second],{resetAt:now+4000}),[]);
+assert.equal(globalStandings([first,second],{resetAt:now+1500}).every(row=>row.games===1),true);
+const cleared=applyAction(first,{type:'clear'},now+4000);
+assert.deepEqual(globalStandings([...cleared.globalArchives,cleared]),globalStandings([first]));
+console.log('Cumulative identity, unscored games, record deletion, reset and session reset retention passed.');
