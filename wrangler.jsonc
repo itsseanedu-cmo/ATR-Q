@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "atr-q-dev",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-11-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "atr-q-dev-db",
+      "database_id": "9623b5f3-f9ef-4f18-b221-a98d33aa7107"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
